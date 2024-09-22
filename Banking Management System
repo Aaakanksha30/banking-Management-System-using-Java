@@ -1,0 +1,356 @@
+import java.io.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Scanner;
+
+class Customer {
+    private String name;
+    private int accountNumber;
+    private double balance;
+    private double loanAmount;
+    private boolean loanApproved;
+
+    public Customer(String name, int accountNumber) {
+        this.name = name;
+        this.accountNumber = accountNumber;
+        this.balance = 0.0;
+        this.loanAmount = 0.0;
+        this.loanApproved = false;
+    }
+
+    public int getAccountNumber() {
+        return accountNumber;
+    }
+
+    public double getBalance() {
+        return balance;
+    }
+
+    public double getLoanAmount() {
+        return loanAmount;
+    }
+
+    public boolean isLoanApproved() {
+        return loanApproved;
+    }
+
+    public void deposit(double amount) {
+        balance += amount;
+        System.out.println("Deposited: " + amount);
+    }
+
+    public void withdraw(double amount) {
+        if (amount <= balance) {
+            balance -= amount;
+            System.out.println("Withdrew: " + amount);
+        } else {
+            System.out.println("Insufficient balance.");
+        }
+    }
+
+    public void applyForLoan(double amount) {
+        loanAmount += amount;
+        loanApproved = false;
+        System.out.println("Loan applied for: " + amount);
+    }
+
+    public void approveLoan() {
+        loanApproved = true;
+        System.out.println("Loan approved for account number: " + accountNumber);
+    }
+
+    public void displayBalance() {
+        System.out.println("Current balance: " + balance);
+    }
+
+    public void displayLoanAmount() {
+        if (loanApproved) {
+            System.out.println("Approved loan amount: " + loanAmount);
+        } else {
+            System.out.println("Loan applied for: " + loanAmount);
+            System.out.println("Loan approval status: Pending");
+        }
+    }
+
+    public void displayCustomerDetails() {
+        System.out.println("Account Number: " + accountNumber);
+        System.out.println("Name: " + name);
+        displayBalance();
+        displayLoanAmount();
+    }
+
+    public boolean transferMoney(Customer recipient, double amount) {
+        if (amount <= balance) {
+            this.balance -= amount;
+            recipient.deposit(amount);
+            System.out.println("Transferred: " + amount + " to account number " + recipient.getAccountNumber());
+            return true;
+        } else {
+            System.out.println("Insufficient balance for transfer.");
+            return false;
+        }
+    }
+
+    public String toFileString() {
+        return accountNumber + "," + name + "," + balance + "," + loanAmount + "," + loanApproved;
+    }
+
+    public static Customer fromFileString(String fileString) {
+        String[] parts = fileString.split(",");
+        Customer customer = new Customer(parts[1], Integer.parseInt(parts[0]));
+        customer.balance = Double.parseDouble(parts[2]);
+        customer.loanAmount = Double.parseDouble(parts[3]);
+        customer.loanApproved = Boolean.parseBoolean(parts[4]);
+        return customer;
+    }
+}
+
+public class BankingManagementSystem1 {
+    private static final String EMPLOYEE_ID = "employee123";
+    private static final String EMPLOYEE_KEY = "key456";
+    private static final String DATA_FILE = "customers.txt";
+    private static Map<Integer, Customer> customers = new HashMap<>();
+    private static int nextAccountNumber = 1;
+    private static Scanner scanner = new Scanner(System.in);
+
+    public static void main(String[] args) {
+        loadCustomerData();
+
+        while (true) {
+            System.out.println("Are you an \n1. Employee \n2. Customer \n3. Exit?");
+            int userType = Integer.parseInt(scanner.nextLine());
+	    System.out.println("----------------------------");
+            if (userType == 1) {
+                handleEmployeeLogin();
+            } else if (userType == 2) {
+                handleCustomer();
+            } else if (userType == 3) {
+                saveCustomerData();
+		System.out.println("Exiting.......");
+                break;
+            } else {
+                System.out.println("Invalid input. Please enter '1' , '2' or '3'.");
+            }
+	    System.out.println("----------------------------");
+        }
+    }
+
+    private static void handleEmployeeLogin() {
+        System.out.print("Enter Employee ID: ");
+        String employeeId = scanner.nextLine();
+        System.out.print("Enter Employee Key: ");
+        String employeeKey = scanner.nextLine();
+
+        if (employeeId.equals(EMPLOYEE_ID) && employeeKey.equals(EMPLOYEE_KEY)) {
+            handleEmployee();
+        } else {
+            System.out.println("Invalid Employee ID or Key.");
+        }
+    }
+
+    private static void handleEmployee() {
+        while (true) {
+            try {
+                System.out.println("Choose an operation: \n1. View All Customer Accounts \n2. Approve Loan \n3. Delete Account \n4. Exit");
+                int choice = Integer.parseInt(scanner.nextLine());
+
+                switch (choice) {
+                    case 1:
+                        viewAllCustomerAccounts();
+			System.out.println("----------------------------");
+                        break;
+                    case 2:
+                        approveLoan();
+			System.out.println("----------------------------");
+                        break;
+                    case 3:
+                        deleteAccount();
+			System.out.println("----------------------------");
+                        break;
+                    case 4:
+                        return;
+                    default:
+                        System.out.println("Invalid choice. Please try again.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid input. Please enter a valid number.");
+            } catch (Exception e) {
+                System.out.println("An error occurred. Please try again.");
+            }
+        }
+    }
+
+    private static void viewAllCustomerAccounts() {
+        if (customers.isEmpty()) {
+            System.out.println("No customer accounts found.");
+        } else {
+            for (Customer customer : customers.values()) {
+                customer.displayCustomerDetails();
+                System.out.println("----------------------------");
+            }
+        }
+    }
+
+    private static void approveLoan() {
+        try {
+            System.out.print("Enter the account number for loan approval: ");
+            int accountNumber = Integer.parseInt(scanner.nextLine());
+            Customer customer = customers.get(accountNumber);
+
+            if (customer != null) {
+                customer.approveLoan();
+            } else {
+                System.out.println("Account not found.");
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid account number. Please enter a valid number.");
+        }
+    }
+
+    private static void deleteAccount() {
+        try {
+            System.out.print("Enter the account number to delete: ");
+            int accountNumber = Integer.parseInt(scanner.nextLine());
+            if (customers.remove(accountNumber) != null) {
+                System.out.println("Account deleted successfully.");
+            } else {
+                System.out.println("Account not found.");
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid account number. Please enter a valid number.");
+        }
+    }
+
+    private static void handleCustomer() {
+        System.out.println("1. If you are an existing customer\n2. Create a new account\n3. Exit");
+        int customerType = Integer.parseInt(scanner.nextLine());
+
+        if (customerType == 1) {
+            try {
+                System.out.print("Enter your account number: ");
+                int accountNumber = Integer.parseInt(scanner.nextLine());
+                Customer customer = customers.get(accountNumber);
+
+                if (customer != null) {
+                    customerMenu(customer);
+                } else {
+                    System.out.println("Account not found.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid account number. Please enter a valid number.");
+            }
+        } else if (customerType == 2) {
+            createNewAccount();
+        } else if (customerType == 3) {
+            System.out.println("Exiting.....");
+        } else {
+            System.out.println("Invalid input. Please enter '1','2' or '3'");
+        }
+    }
+
+    private static void createNewAccount() {
+        try {
+            System.out.print("Enter your name: ");
+            String name = scanner.nextLine();
+            int accountNumber = next3AccountNumber++;
+            Customer customer = new Customer(name, accountNumber);
+            customers.put(accountNumber, customer);
+            System.out.println("Account created successfully. \nYour account number is: " + accountNumber);
+	    System.out.println("----------------------------");
+            customerMenu(customer);
+        } catch (Exception e) {
+            System.out.println("An error occurred while creating the account. Please try again.");
+        }
+    }
+
+    private static void customerMenu(Customer customer) {
+        while (true) {
+            try {
+                System.out.println("Choose an operation: \n1. Display Balance \n2. Deposit \n3. Withdraw \n4. Apply for Loan \n5. Transfer Money\n6. Display Loan Amount\n7. Exit");
+                int choice = Integer.parseInt(scanner.nextLine());
+
+                switch (choice) {
+                    case 1:
+                        customer.displayBalance();
+			System.out.println("----------------------------");
+                        break;
+                    case 2:
+                        System.out.print("Enter amount to deposit: ");
+                        double depositAmount = Double.parseDouble(scanner.nextLine());
+                        customer.deposit(depositAmount);
+			System.out.println("----------------------------");
+                        break;
+                    case 3:
+                        System.out.print("Enter amount to withdraw: ");
+                        double withdrawAmount = Double.parseDouble(scanner.nextLine());
+                        customer.withdraw(withdrawAmount);
+                        System.out.println("----------------------------");
+			break;
+                    case 4:
+                        System.out.print("Enter loan amount to apply for: ");
+                        double loanAmount = Double.parseDouble(scanner.nextLine());
+                        customer.applyForLoan(loanAmount);
+			System.out.println("----------------------------");
+                        break;
+                    case 5:
+                        System.out.print("Enter recipient account number: ");
+                        int recipientAccountNumber = Integer.parseInt(scanner.nextLine());
+                        Customer recipient = customers.get(recipientAccountNumber);
+                        if (recipient != null) {
+                            System.out.print("Enter amount to transfer: ");
+                            double transferAmount = Double.parseDouble(scanner.nextLine());
+                            customer.transferMoney(recipient, transferAmount);
+			    System.out.println("----------------------------");
+                        } else {
+                            System.out.println("Recipient account not found.");
+			    System.out.println("----------------------------");
+                        }
+                        break;
+                    case 6:
+                        customer.displayLoanAmount();
+			System.out.println("----------------------------");
+                        break;
+                    case 7:
+                        return;
+                    default:
+                        System.out.println("Invalid choice. Please try again.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid input. Please enter a valid number.");
+            } catch (Exception e) {
+                System.out.println("An error occurred. Please try again.");
+            }
+        }
+    }
+
+    private static void saveCustomerData() {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(DATA_FILE))) {
+            for (Customer customer : customers.values()) {
+                writer.write(customer.toFileString());
+                writer.newLine();
+            }
+            writer.write(String.valueOf(nextAccountNumber));
+        } catch (IOException e) {
+            System.out.println("An error occurred while saving customer data: " + e.getMessage());
+        }
+    }
+
+    private static void loadCustomerData() {
+        try (BufferedReader reader = new BufferedReader(new FileReader(DATA_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length == 1) {
+                    nextAccountNumber = Integer.parseInt(parts[0]);
+                } else {
+                    Customer customer = Customer.fromFileString(line);
+                    customers.put(customer.getAccountNumber(), customer);
+                }
+            }
+        } catch (FileNotFoundException e) {
+            System.out.println("No previous data found. Starting fresh.");
+        } catch (IOException e) {
+            System.out.println("An error occurred while loading customer data: " + e.getMessage());
+        }
+    }
+}
